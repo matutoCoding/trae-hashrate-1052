@@ -4,7 +4,7 @@ import { useAppStore, emptyMorphology, emptyHabitat } from '../stores/appStore';
 import { matchAllSpecies } from '../utils/matchingEngine';
 import { analyzeRisk } from '../utils/riskAnalyzer';
 import {
-  CircleDot, Cylinder, CircleDollarSign, Ring, Flower2, Microscope,
+  CircleDot, Cylinder, CircleDollarSign, Circle, Flower2, Microscope,
   MapPin, Trees, Mountain, Calendar as CalendarIcon, Camera, FileText,
   ChevronDown, ChevronUp, Search, RotateCcw, CheckCircle2, XCircle,
 } from 'lucide-react';
@@ -21,7 +21,7 @@ const sectionConfig: { key: SectionKey; title: string; icon: any; desc: string }
   { key: 'cap', title: '菌盖特征', icon: CircleDollarSign, desc: '形状、颜色、直径、鳞片' },
   { key: 'gill', title: '菌褶特征', icon: CircleDot, desc: '颜色、密度、附着方式' },
   { key: 'stem', title: '菌柄特征', icon: Cylinder, desc: '颜色、尺寸、质地' },
-  { key: 'ring', title: '菌环特征', icon: Ring, desc: '有无、位置、形态' },
+  { key: 'ring', title: '菌环特征', icon: Circle, desc: '有无、位置、形态' },
   { key: 'volva', title: '菌托特征', icon: Flower2, desc: '有无、形态、颜色' },
   { key: 'spore', title: '孢印颜色', icon: Microscope, desc: '孢子印颜色（关键）' },
   { key: 'habitat', title: '生境元数据', icon: Trees, desc: 'GPS、树种、海拔、照片' },

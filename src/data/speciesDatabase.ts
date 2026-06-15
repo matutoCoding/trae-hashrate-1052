@@ -347,48 +347,74 @@ export const COLOR_OPTIONS = [
   { name: '乳白色', hex: '#faf5ef' },
   { name: '污白色', hex: '#e8e4de' },
   { name: '黄白色', hex: '#fef9c3' },
+  { name: '米白色', hex: '#f5f5dc' },
+  { name: '近白色', hex: '#f1f5f9' },
   { name: '粉红色', hex: '#fda4af' },
   { name: '浅红色', hex: '#fb7185' },
   { name: '肉粉色', hex: '#fecdd3' },
+  { name: '淡粉色', hex: '#fbcfe8' },
   { name: '鲜红色', hex: '#dc2626' },
+  { name: '珊瑚红色', hex: '#f43f5e' },
+  { name: '血红色', hex: '#b91c1c' },
   { name: '橘红色', hex: '#f97316' },
+  { name: '橙红色', hex: '#ea580c' },
+  { name: '橘黄色', hex: '#fb923c' },
   { name: '橙黄色', hex: '#fbbf24' },
   { name: '金黄色', hex: '#eab308' },
   { name: '鲜黄色', hex: '#facc15' },
+  { name: '淡黄色', hex: '#fef08a' },
+  { name: '乳黄色', hex: '#fef9c3' },
+  { name: '土黄色', hex: '#ca8a04' },
+  { name: '黄褐色', hex: '#a16207' },
+  { name: '橄榄褐色', hex: '#65a30d' },
   { name: '淡褐色', hex: '#d6d3d1' },
   { name: '浅褐色', hex: '#a8a29e' },
-  { name: '黄褐色', hex: '#a16207' },
+  { name: '浅棕色', hex: '#a3785c' },
+  { name: '浅土黄色', hex: '#d4a84b' },
   { name: '灰褐色', hex: '#78716c' },
   { name: '棕褐色', hex: '#854d0e' },
   { name: '深褐色', hex: '#57534e' },
+  { name: '暗褐色', hex: '#3f3f46' },
   { name: '黑褐色', hex: '#292524' },
   { name: '鼠灰色', hex: '#6b7280' },
   { name: '黑灰色', hex: '#374151' },
   { name: '近黑色', hex: '#18181b' },
   { name: '栗褐色', hex: '#78350f' },
   { name: '肉桂色', hex: '#b45309' },
-  { name: '土黄色', hex: '#ca8a04' },
+  { name: '红褐色', hex: '#991b1b' },
   { name: '绿色', hex: '#16a34a' },
   { name: '青绿色', hex: '#059669' },
   { name: '草绿色', hex: '#84cc16' },
-  { name: '珊瑚红色', hex: '#f43f5e' },
-  { name: '血红色', hex: '#b91c1c' },
+  { name: '深绿色', hex: '#15803d' },
   { name: '淡紫色', hex: '#c4b5fd' },
-  { name: '红褐色', hex: '#991b1b' },
+  { name: '无色', hex: '#fafafa' },
+  { name: '菌孔初白后黄', hex: '#fef9c3' },
+  { name: '菌孔黄绿色', hex: '#84cc16' },
+  { name: '海绵状', hex: '#d4a84b' },
+  { name: '蜂窝状小室', hex: '#a16207' },
+  { name: '白色（菌孔）', hex: '#f8fafc' },
 ];
 
 export const SHAPE_OPTIONS_CAP = [
-  '卵形', '卵圆形', '球形', '半球形', '扁半球形', '钟形', '圆锥状',
-  '展开伞形', '伞形', '凸镜形', '平展', '平展中凹', '漏斗形', '中央突起',
+  '卵形', '卵圆形', '球形', '半球形', '扁半球形', '馒头形', '钟形', '圆锥状', '圆锥形',
+  '展开伞形', '伞形', '凸镜形', '平展', '平展中凹', '漏斗形', '浅漏斗形', '中央突起',
+  '蜂窝状', '卵圆形蜂窝状', '圆锥形蜂窝状',
+  '不规则脑状', '马鞍形扭曲', '脑状扭曲',
+  '扁半球形有鳞片', '球形有鳞片',
 ];
 
-export const SHAPE_OPTIONS_VOLVA = ['杯状', '苞状', '浅杯状', '鞘状', '鳞茎状', '疣状', '大型'];
-export const SHAPE_OPTIONS_RING = ['膜质', '裙状', '大而明显', '丝膜状'];
-export const ATTACHMENT_OPTIONS = ['离生', '弯生', '直生', '稍延生', '延生', '菌孔'];
+export const SHAPE_OPTIONS_VOLVA = ['杯状', '苞状', '浅杯状', '鞘状', '鳞茎状', '疣状', '大型', '假根状'];
+export const SHAPE_OPTIONS_RING = ['膜质', '裙状', '大而明显', '丝膜状', '环状', '蛛网状'];
+export const ATTACHMENT_OPTIONS = [
+  '离生', '弯生', '直生', '稍延生', '延生',
+  '菌孔', '菌孔直生', '菌孔弯生',
+  '蜂窝状', '海绵状', '皱褶状', '菌孔状',
+];
 export const DENSITY_OPTIONS = [
   { value: 'crowded', label: '密集' },
   { value: 'close', label: '稍密' },
   { value: 'distant', label: '稀疏' },
+  { value: 'honeycomb', label: '蜂窝状' },
 ];
 export const RING_POSITION_OPTIONS = ['upper', 'middle', 'lower'];
 export const STAGE_OPTIONS = [
@@ -397,4 +423,7 @@ export const STAGE_OPTIONS = [
   { value: 'old', label: '老熟期（开始变形）' },
 ];
 export const SEASON_OPTIONS = ['春季', '初夏', '夏末', '夏季', '雨季', '秋季', '秋初', '夏末秋初', '高温高湿期'];
-export const STEM_TEXTURE_OPTIONS = ['光滑', '有纤毛', '有鳞片', '有网纹', '肉质', '结实', '中空'];
+export const STEM_TEXTURE_OPTIONS = [
+  '光滑', '有纤毛', '有鳞片', '有网纹', '肉质', '结实', '中空',
+  '粗壮肉质', '纤维状鳞片', '脆',
+];

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { MorphologyFeatures, HabitatData, MatchCandidate, RiskAssessment, CollectionRecord } from '../types';
+import type { MorphologyFeatures, HabitatData, MatchCandidate, RiskAssessment, CollectionRecord, PersonalGalleryEntry } from '../types';
 
 export const emptyMorphology = (): MorphologyFeatures => ({
   cap: { shape: '', color: '', diameter: 0, hasScales: false },
@@ -29,6 +29,7 @@ interface AppState {
   risk: RiskAssessment | null;
   records: CollectionRecord[];
   gallerySpeciesIds: number[];
+  personalGallery: PersonalGalleryEntry[];
   offline: boolean;
 
   setMorphology: (fn: (prev: MorphologyFeatures) => MorphologyFeatures) => void;
@@ -41,6 +42,8 @@ interface AppState {
   removeRecord: (id: string) => void;
   addToGallery: (speciesId: number) => void;
   removeFromGallery: (speciesId: number) => void;
+  addPersonalGalleryEntry: (entry: PersonalGalleryEntry) => void;
+  removePersonalGalleryEntry: (id: string) => void;
   setOffline: (v: boolean) => void;
   resetAll: () => void;
 }
@@ -54,6 +57,7 @@ export const useAppStore = create<AppState>()(
       risk: null,
       records: [],
       gallerySpeciesIds: [5, 6, 7, 8, 9, 10, 12, 14],
+      personalGallery: [],
       offline: true,
 
       setMorphology: (fn) => set((s) => ({ morphology: fn(s.morphology) })),
@@ -72,6 +76,10 @@ export const useAppStore = create<AppState>()(
         })),
       removeFromGallery: (speciesId) =>
         set((s) => ({ gallerySpeciesIds: s.gallerySpeciesIds.filter((i) => i !== speciesId) })),
+      addPersonalGalleryEntry: (entry) =>
+        set((s) => ({ personalGallery: [entry, ...s.personalGallery] })),
+      removePersonalGalleryEntry: (id) =>
+        set((s) => ({ personalGallery: s.personalGallery.filter((e) => e.id !== id) })),
       setOffline: (v) => set({ offline: v }),
       resetAll: () => set({ morphology: emptyMorphology(), habitat: emptyHabitat(), candidates: [], risk: null }),
     }),
@@ -81,6 +89,7 @@ export const useAppStore = create<AppState>()(
       partialize: (s) => ({
         records: s.records,
         gallerySpeciesIds: s.gallerySpeciesIds,
+        personalGallery: s.personalGallery,
       }),
     }
   )

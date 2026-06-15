@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../stores/appStore';
 import { getSpeciesById } from '../utils/matchingEngine';
 import { simulateDetoxification } from '../utils/detoxSimulator';
-import type { CollectionRecord } from '../types';
+import type { CollectionRecord, PersonalGalleryEntry } from '../types';
 import { saveRecordIndexedDB } from '../db/indexedDb';
 import {
   AlertTriangle, Skull, Clock, Users, Thermometer, ShieldCheck,
@@ -16,7 +16,7 @@ export default function RiskWarning() {
   const navigate = useNavigate();
   const {
     candidates, risk, morphology, habitat,
-    addRecord, addToGallery,
+    addRecord, addToGallery, addPersonalGalleryEntry,
   } = useAppStore();
 
   const [showAlert, setShowAlert] = useState(false);
@@ -48,8 +48,9 @@ export default function RiskWarning() {
 
   const saveRecord = async (decision: CollectionRecord['finalDecision'], notes?: string) => {
     setSaving(true);
+    const recordId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     const record: CollectionRecord = {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      id: recordId,
       collectedAt: habitat.collectedAt || new Date().toISOString(),
       habitat: habitat as any,
       morphology,
@@ -69,6 +70,27 @@ export default function RiskWarning() {
       const sp = topMatch && getSpeciesById(topMatch.speciesId);
       if (sp && sp.safetyLevel >= 4 && topMatch.matchScore > 80 && sp.edibility.edible) {
         addToGallery(sp.id);
+      }
+
+      if (sp && topMatch && topMatch.matchScore >= 60) {
+        const galleryEntry: PersonalGalleryEntry = {
+          id: `pg_${recordId}`,
+          speciesId: sp.id,
+          speciesName: sp.chineseName,
+          recordId: recordId,
+          collectedAt: record.collectedAt,
+          location: {
+            lat: habitat.gps?.lat || 0,
+            lng: habitat.gps?.lng || 0,
+            altitude: habitat.altitude || 0,
+          },
+          locationLabel: habitat.trees?.slice(0, 2).join('、'),
+          photo: habitat.photos?.[0],
+          notes: notes,
+          confidence: topMatch.matchScore,
+          addedAt: new Date().toISOString(),
+        };
+        addPersonalGalleryEntry(galleryEntry);
       }
     }
 

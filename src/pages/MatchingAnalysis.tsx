@@ -1,18 +1,76 @@
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../stores/appStore';
-import { getSpeciesById } from '../utils/matchingEngine';
+import { getSpeciesById, generateFeatureReview, type FeatureReviewItem } from '../utils/matchingEngine';
 import { SPECIES_DATABASE } from '../data/speciesDatabase';
 import {
   Search, AlertTriangle, ArrowRight, CheckCircle2, XCircle,
   ChevronDown, ChevronUp, BarChart3, Skull, Leaf, ShieldAlert,
+  Check, Eye, ListChecks, ArrowLeft, Zap,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+
+const CATEGORY_LABELS: Record<string, string> = {
+  cap: '菌盖',
+  gill: '菌褶',
+  stem: '菌柄',
+  ring: '菌环',
+  volva: '菌托',
+  spore: '孢印',
+  habitat: '生境',
+};
 
 export default function MatchingAnalysis() {
   const navigate = useNavigate();
-  const { candidates, risk } = useAppStore();
+  const { candidates, risk, morphology, habitat } = useAppStore();
   const [expandedId, setExpandedId] = useState<number | null>(candidates[0]?.speciesId || null);
+  const [reviewMode, setReviewMode] = useState<number | null>(null);
+  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+
+  const reviewItems = useMemo(() => {
+    if (!reviewMode) return [];
+    return generateFeatureReview(reviewMode, morphology, habitat);
+  }, [reviewMode, morphology, habitat]);
+
+  const criticalDiffs = useMemo(() => {
+    return reviewItems.filter(item => item.isCritical && !item.isMatch);
+  }, [reviewItems]);
+
+  const allCriticalChecked = useMemo(() => {
+    return criticalDiffs.every(item => checkedItems[`${reviewMode}-${item.key}`]);
+  }, [criticalDiffs, checkedItems, reviewMode]);
+
+  const allReviewed = useMemo(() => {
+    return reviewItems.length > 0 && reviewItems.every(item => checkedItems[`${reviewMode}-${item.key}`]);
+  }, [reviewItems, checkedItems, reviewMode]);
+
+  const reviewedCount = reviewItems.filter(i => checkedItems[`${reviewMode}-${i.key}`]).length;
+
+  const toggleCheck = (key: string) => {
+    setCheckedItems(prev => ({
+      ...prev,
+      [`${reviewMode}-${key}`]: !prev[`${reviewMode}-${key}`],
+    }));
+  };
+
+  const enterReview = (speciesId: number) => {
+    setReviewMode(speciesId);
+    setExpandedId(speciesId);
+    const items = generateFeatureReview(speciesId, morphology, habitat);
+    const initial: Record<string, boolean> = {};
+    items.forEach(item => {
+      if (item.isMatch) initial[`${speciesId}-${item.key}`] = true;
+    });
+    setCheckedItems(prev => ({ ...prev, ...initial }));
+  };
+
+  const exitReview = () => {
+    setReviewMode(null);
+  };
+
+  const goToRisk = () => {
+    navigate('/risk');
+  };
 
   if (!candidates.length) {
     return (
@@ -23,6 +81,213 @@ export default function MatchingAnalysis() {
         <button onClick={() => navigate('/')} className="btn-primary">
           去录入特征
         </button>
+      </div>
+    );
+  }
+
+  if (reviewMode) {
+    const sp = getSpeciesById(reviewMode);
+    if (!sp) return null;
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={exitReview}
+            className="w-10 h-10 rounded-2xl bg-white border border-mushroom-200 flex items-center justify-center shadow-soft"
+          >
+            <ArrowLeft className="w-5 h-5 text-mushroom-700" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-serif font-bold text-forest-900 truncate">
+              逐项复核 · {sp.chineseName}
+            </h2>
+            <p className="text-xs text-mushroom-500">
+              已复核 {reviewedCount} / {reviewItems.length} 项
+            </p>
+          </div>
+        </div>
+
+        <div className="h-2 bg-mushroom-200 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-forest-500 to-forest-700 transition-all duration-500"
+            style={{ width: `${(reviewedCount / reviewItems.length) * 100}%` }}
+          />
+        </div>
+
+        {criticalDiffs.length > 0 && (
+          <div className="card border-danger-400 border-2 bg-danger-50/80">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-5 h-5 text-danger-600" />
+              <h3 className="font-bold text-danger-800">
+                ⚠️ 关键特征不一致 ({criticalDiffs.length} 项)
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {criticalDiffs.map(item => (
+                <div
+                  key={item.key}
+                  className="p-3 rounded-xl bg-white border border-danger-200"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="px-1.5 py-0.5 rounded bg-danger-100 text-[10px] font-bold text-danger-700">
+                          关键
+                        </span>
+                        <span className="font-bold text-danger-800 text-sm">{item.label}</span>
+                      </div>
+                      <div className="text-xs space-y-0.5">
+                        <p><span className="text-mushroom-500">您录入：</span><span className="font-medium text-danger-700">{item.inputValue}</span></p>
+                        <p><span className="text-mushroom-500">标准特征：</span><span className="font-medium text-forest-700">{item.expectedValue}</span></p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => toggleCheck(item.key)}
+                      className={cn(
+                        'w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all',
+                        checkedItems[`${reviewMode}-${item.key}`]
+                          ? 'bg-forest-600 border-forest-600'
+                          : 'bg-white border-mushroom-300'
+                      )}
+                    >
+                      {checkedItems[`${reviewMode}-${item.key}`] && (
+                        <Check className="w-4 h-4 text-white" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-danger-700 mt-3 bg-danger-100/50 rounded-lg p-2">
+              ⚡ 关键特征不一致说明该候选种可能性低，请仔细确认后再打勾
+            </p>
+          </div>
+        )}
+
+        {Object.entries(CATEGORY_LABELS).map(([cat, catLabel]) => {
+          const catItems = reviewItems.filter(i => i.category === cat);
+          if (catItems.length === 0) return null;
+          return (
+            <div key={cat} className="card">
+              <h3 className="text-sm font-bold text-forest-800 mb-3 flex items-center gap-2">
+                <span className="w-1 h-5 rounded-full bg-forest-500" />
+                {catLabel}特征
+                <span className="text-xs font-normal text-mushroom-500 ml-auto">
+                  {catItems.filter(i => checkedItems[`${reviewMode}-${i.key}`]).length}/{catItems.length}
+                </span>
+              </h3>
+              <div className="space-y-2">
+                {catItems.map(item => (
+                  <button
+                    key={item.key}
+                    onClick={() => toggleCheck(item.key)}
+                    className={cn(
+                      'w-full text-left p-3 rounded-xl border transition-all',
+                      checkedItems[`${reviewMode}-${item.key}`]
+                        ? item.isMatch
+                          ? 'bg-forest-50 border-forest-300'
+                          : 'bg-warn-50 border-warn-300'
+                        : 'bg-white border-mushroom-200 hover:border-mushroom-300'
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={cn(
+                        'w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all',
+                        checkedItems[`${reviewMode}-${item.key}`]
+                          ? item.isMatch
+                            ? 'bg-forest-600 border-forest-600'
+                            : 'bg-warn-500 border-warn-500'
+                          : 'bg-white border-mushroom-300'
+                      )}>
+                        {checkedItems[`${reviewMode}-${item.key}`] && (
+                          <Check className="w-3.5 h-3.5 text-white" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={cn(
+                            'text-sm font-bold',
+                            item.isMatch ? 'text-forest-800' : 'text-warn-800'
+                          )}>
+                            {item.label}
+                          </span>
+                          {item.isCritical && (
+                            <span className="px-1.5 py-0.5 rounded bg-danger-100 text-[9px] font-bold text-danger-700">
+                              关键
+                            </span>
+                          )}
+                          <span className="ml-auto text-[10px] font-bold text-mushroom-500">
+                            {item.matchScore}%
+                          </span>
+                        </div>
+                        <div className="text-xs space-y-0.5">
+                          <p className="text-mushroom-600">
+                            您录入：<span className="font-medium text-mushroom-800">{item.inputValue}</span>
+                          </p>
+                          <p className="text-mushroom-500">
+                            标准：<span className={cn(
+                              'font-medium',
+                              item.isMatch ? 'text-forest-700' : 'text-warn-700'
+                            )}>{item.expectedValue}</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        {sp.lookalikeDangers.length > 0 && (
+          <div className="card border-warn-300 bg-warn-50/50">
+            <h3 className="text-sm font-bold text-warn-800 mb-3 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              易混有毒种鉴别
+            </h3>
+            <div className="space-y-2">
+              {sp.lookalikeDangers.map((d, i) => {
+                const dangerSp = getSpeciesById(d.speciesId);
+                return (
+                  <div key={i} className="p-3 rounded-xl bg-white border border-warn-200">
+                    <p className="text-xs font-bold text-danger-700 mb-1">
+                      与 {dangerSp?.chineseName || '毒菌'} 的区别：
+                    </p>
+                    <p className="text-xs text-warn-800">{d.difference}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="sticky bottom-24 z-30 space-y-2">
+          {!allCriticalChecked && criticalDiffs.length > 0 && (
+            <div className="p-3 rounded-2xl bg-danger-100 border border-danger-300 text-danger-800 text-xs text-center">
+              ⚠️ 仍有 {criticalDiffs.filter(i => !checkedItems[`${reviewMode}-${i.key}`]).length} 项关键特征不一致未确认
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={exitReview}
+              className="btn-ghost flex-1 !py-3"
+            >
+              返回列表
+            </button>
+            <button
+              onClick={goToRisk}
+              className={cn(
+                'btn-primary flex-1 !py-3 flex items-center justify-center gap-2',
+              )}
+            >
+              <ShieldAlert className="w-4 h-4" />
+              进入风险研判
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -49,6 +314,15 @@ export default function MatchingAnalysis() {
             完整风险报告
           </button>
         </div>
+      </div>
+
+      <div className="flex items-center justify-between px-1">
+        <span className="text-xs text-mushroom-600">
+          共 {candidates.length} 个候选种
+        </span>
+        <span className="text-[10px] text-mushroom-500">
+          点击展开详情 · 再点进入逐项复核
+        </span>
       </div>
 
       <div className="space-y-3">
@@ -212,18 +486,18 @@ export default function MatchingAnalysis() {
 
                   <div className="flex gap-2">
                     <button
-                      onClick={() => navigate('/risk')}
-                      className="btn-danger flex-1 !py-2 text-sm"
+                      onClick={() => enterReview(sp.id)}
+                      className="btn-primary flex-1 !py-2.5 text-sm flex items-center justify-center gap-1.5"
                     >
-                      <AlertTriangle className="w-4 h-4" />
-                      风险研判
+                      <ListChecks className="w-4 h-4" />
+                      逐项复核
                     </button>
                     <button
                       onClick={() => navigate('/risk')}
-                      className="btn-primary flex-1 !py-2 text-sm"
+                      className="btn-danger flex-1 !py-2.5 text-sm flex items-center justify-center gap-1.5"
                     >
-                      下一步
-                      <ArrowRight className="w-4 h-4" />
+                      <Zap className="w-4 h-4" />
+                      快速风险研判
                     </button>
                   </div>
                 </div>
@@ -242,12 +516,13 @@ function RiskSummaryMini({
   riskLevel: string;
   recommendDiscard: boolean;
 }) {
-  const config = {
+  const riskConfigMap: Record<string, { bg: string; text: string; label: string; icon: any }> = {
     extreme: { bg: 'bg-danger-100', text: 'text-danger-800', label: '极度危险', icon: Skull },
     high: { bg: 'bg-danger-100', text: 'text-danger-700', label: '高风险', icon: AlertTriangle },
     medium: { bg: 'bg-warn-100', text: 'text-warn-700', label: '中等风险', icon: AlertTriangle },
     low: { bg: 'bg-forest-100', text: 'text-forest-700', label: '低风险', icon: CheckCircle2 },
-  }[riskLevel as keyof any] || config.low;
+  };
+  const config = riskConfigMap[riskLevel] || riskConfigMap.low;
   const Icon = config.icon;
   return (
     <div className={cn('flex items-center gap-2 px-3 py-2 rounded-xl flex-1', config.bg)}>

@@ -142,4 +142,18 @@ export interface CollectionRecord {
   addedToGallery?: boolean;
 }
 
+export interface PersonalGalleryEntry {
+  id: string;
+  speciesId: number;
+  speciesName: string;
+  recordId: string;
+  collectedAt: string;
+  location: { lat: number; lng: number; altitude: number };
+  locationLabel?: string;
+  photo?: string;
+  notes?: string;
+  confidence: number;
+  addedAt: string;
+}
+
 export type PageRoute = '/' | '/match' | '/risk' | '/archive' | '/gallery' | '/archive/:id';

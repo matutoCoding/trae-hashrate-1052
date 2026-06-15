@@ -2,17 +2,17 @@ import type { MorphologyFeatures, HabitatData, Species, MatchCandidate } from '.
 import { SPECIES_DATABASE } from '../data/speciesDatabase';
 
 const COLOR_FAMILIES: Record<string, string[]> = {
-  white: ['白色', '乳白色', '污白色', '黄白色', '近白色', '米白色', '白色（菌孔）'],
-  pink: ['粉红色', '浅红色', '肉粉色', '淡粉色', '淡紫色'],
-  yellow: ['鲜黄色', '金黄色', '橙黄色', '黄白色', '淡黄色', '乳黄色'],
-  orange: ['橘红色', '橙红色', '橘黄色', '橙黄'],
-  red: ['鲜红色', '珊瑚红色', '血红色'],
+  white: ['白色', '乳白色', '污白色', '黄白色', '近白色', '米白色', '白色（菌孔）', '无色'],
+  pink: ['粉红色', '浅红色', '肉粉色', '淡粉色', '淡紫色', '珊瑚红色'],
+  yellow: ['鲜黄色', '金黄色', '橙黄色', '黄白色', '淡黄色', '乳黄色', '橘黄色', '菌孔初白后黄', '土黄色', '浅土黄色'],
+  orange: ['橘红色', '橙红色', '橘黄色', '橙黄', '橙黄色'],
+  red: ['鲜红色', '珊瑚红色', '血红色', '红褐色'],
   brown: [
     '淡褐色', '浅褐色', '黄褐色', '灰褐色', '棕褐色', '深褐色', '黑褐色',
     '鼠灰色', '黑灰色', '近黑色', '栗褐色', '肉桂色', '土黄色', '浅棕色',
-    '浅土黄色', '暗褐色', '红褐色',
+    '浅土黄色', '暗褐色', '红褐色', '橄榄褐色', '蜂窝状小室', '海绵状', '菌孔黄绿色',
   ],
-  green: ['绿色', '青绿色', '草绿色', '深绿'],
+  green: ['绿色', '青绿色', '草绿色', '深绿色', '菌孔黄绿色'],
 };
 
 const FEATURE_WEIGHTS = {
@@ -204,4 +204,137 @@ export function matchAllSpecies(
 
 export function getSpeciesById(id: number): Species | undefined {
   return SPECIES_DATABASE.find(s => s.id === id);
+}
+
+export interface FeatureReviewItem {
+  key: string;
+  label: string;
+  category: 'cap' | 'gill' | 'stem' | 'ring' | 'volva' | 'spore' | 'habitat';
+  inputValue: string;
+  expectedValue: string;
+  isMatch: boolean;
+  isCritical: boolean;
+  matchScore: number;
+}
+
+const CRITICAL_FEATURES = ['有无菌环', '有无菌托', '菌褶颜色', '孢印颜色'];
+
+export function generateFeatureReview(
+  speciesId: number,
+  morphology: MorphologyFeatures,
+  habitat?: Partial<HabitatData>
+): FeatureReviewItem[] {
+  const sp = getSpeciesById(speciesId);
+  if (!sp) return [];
+
+  const items: FeatureReviewItem[] = [];
+
+  const addItem = (
+    key: string, label: string, category: FeatureReviewItem['category'],
+    inputVal: string, expectedVal: string, score: number,
+  ) => {
+    items.push({
+      key, label, category,
+      inputValue: inputVal || '未填写',
+      expectedValue: expectedVal,
+      isMatch: score >= 0.8,
+      isCritical: CRITICAL_FEATURES.includes(label),
+      matchScore: Math.round(score * 100),
+    });
+  };
+
+  const s1 = matchString(morphology.cap.shape, sp.cap.shapes);
+  addItem('capShape', '菌盖形状', 'cap', morphology.cap.shape, sp.cap.shapes.join(' / '), s1);
+
+  const s2 = matchColor(morphology.cap.color, sp.cap.colors);
+  addItem('capColor', '菌盖颜色', 'cap', morphology.cap.color, sp.cap.colors.join(' / '), s2);
+
+  const s3 = matchRange(morphology.cap.diameter, sp.cap.diameterRange);
+  addItem('capDiameter', '菌盖直径', 'cap',
+    morphology.cap.diameter ? `${morphology.cap.diameter}cm` : '',
+    `${sp.cap.diameterRange[0]}-${sp.cap.diameterRange[1]}cm`, s3);
+
+  const s4 = matchBoolean(morphology.cap.hasScales, sp.cap.scales);
+  addItem('capScales', '菌盖鳞片', 'cap',
+    morphology.cap.hasScales ? '有' : '无',
+    sp.cap.scales ? '有' : '无', s4);
+
+  const s5 = matchColor(morphology.gill.color, sp.gill.colors);
+  addItem('gillColor', '菌褶颜色', 'gill', morphology.gill.color, sp.gill.colors.join(' / '), s5);
+
+  const s6 = matchString(morphology.gill.density, sp.gill.densities);
+  addItem('gillDensity', '菌褶密度', 'gill',
+    morphology.gill.density === 'crowded' ? '密集' : morphology.gill.density === 'close' ? '稍密' : morphology.gill.density === 'distant' ? '稀疏' : '',
+    sp.gill.densities.map(d => d === 'crowded' ? '密集' : d === 'close' ? '稍密' : '稀疏').join(' / '), s6);
+
+  const s7 = matchString(morphology.gill.attachment, sp.gill.attachments);
+  addItem('gillAttachment', '菌褶着生', 'gill', morphology.gill.attachment, sp.gill.attachments.join(' / '), s7);
+
+  const s8 = matchColor(morphology.stem.color, sp.stem.colors);
+  addItem('stemColor', '菌柄颜色', 'stem', morphology.stem.color, sp.stem.colors.join(' / '), s8);
+
+  const s9 = matchRange(morphology.stem.length, sp.stem.lengthRange);
+  addItem('stemLength', '菌柄长度', 'stem',
+    morphology.stem.length ? `${morphology.stem.length}cm` : '',
+    `${sp.stem.lengthRange[0]}-${sp.stem.lengthRange[1]}cm`, s9);
+
+  const s10 = matchRange(morphology.stem.thickness, sp.stem.thicknessRange);
+  addItem('stemThickness', '菌柄粗度', 'stem',
+    morphology.stem.thickness ? `${morphology.stem.thickness}cm` : '',
+    `${sp.stem.thicknessRange[0]}-${sp.stem.thicknessRange[1]}cm`, s10);
+
+  const s11 = matchString(morphology.stem.texture, sp.stem.textures);
+  addItem('stemTexture', '菌柄质地', 'stem', morphology.stem.texture, sp.stem.textures.join(' / '), s11);
+
+  const s12 = matchBoolean(morphology.ring.present, sp.ring.present);
+  addItem('ringPresent', '有无菌环', 'ring',
+    morphology.ring.present ? '有' : '无',
+    sp.ring.present ? '有' : '无', s12);
+
+  if (sp.ring.present && morphology.ring.present) {
+    const s13 = matchString(morphology.ring.position || '', sp.ring.positions);
+    const posLabel = morphology.ring.position === 'upper' ? '上部'
+      : morphology.ring.position === 'middle' ? '中部'
+      : morphology.ring.position === 'lower' ? '下部' : '';
+    const expPos = sp.ring.positions.map(p => p === 'upper' ? '上部' : p === 'middle' ? '中部' : '下部').join(' / ');
+    addItem('ringPosition', '菌环位置', 'ring', posLabel, expPos, s13);
+
+    const s14 = matchString(morphology.ring.shape || '', sp.ring.shapes);
+    addItem('ringShape', '菌环形态', 'ring', morphology.ring.shape || '', sp.ring.shapes.join(' / '), s14);
+  }
+
+  const s16 = matchBoolean(morphology.stem.hasVolva, sp.volva.present);
+  addItem('volvaPresent', '有无菌托', 'volva',
+    morphology.stem.hasVolva ? '有' : '无',
+    sp.volva.present ? '有' : '无', s16);
+
+  if (sp.volva.present && morphology.stem.hasVolva) {
+    const s17 = matchString(morphology.stem.volvaShape || '', sp.volva.shapes);
+    addItem('volvaShape', '菌托形态', 'volva', morphology.stem.volvaShape || '', sp.volva.shapes.join(' / '), s17);
+
+    const s18 = matchColor(morphology.stem.volvaColor || '', sp.volva.colors);
+    addItem('volvaColor', '菌托颜色', 'volva', morphology.stem.volvaColor || '', sp.volva.colors.join(' / '), s18);
+  }
+
+  const s19 = matchColor(morphology.sporePrint, sp.sporePrintColors);
+  addItem('sporePrint', '孢印颜色', 'spore', morphology.sporePrint, sp.sporePrintColors.join(' / '), s19);
+
+  if (habitat?.trees?.length) {
+    const common = habitat.trees.filter(t => sp.habitat.trees.includes(t));
+    const score = common.length > 0 ? Math.min(1, common.length / Math.max(1, sp.habitat.trees.length)) : 0;
+    addItem('habitatTrees', '伴生树种', 'habitat',
+      habitat.trees.join('、'),
+      sp.habitat.trees.join('、'),
+      score);
+  }
+
+  if (habitat?.season) {
+    const match = sp.habitat.seasons.includes(habitat.season);
+    addItem('habitatSeason', '生长季节', 'habitat',
+      habitat.season,
+      sp.habitat.seasons.join('、'),
+      match ? 1 : 0.3);
+  }
+
+  return items;
 }

@@ -242,9 +242,9 @@ export default function ArchiveDetail() {
           )}
 
           <div className="grid grid-cols-2 gap-2 mb-3">
-            <RiskStatCard icon={Skull} label="毒性风险" value={`${Math.round(record.risk.toxicityRisk * 100)}%`} danger={record.risk.toxicityRisk > 0.5} />
+            <RiskStatCard icon={Skull} label="毒性风险" value={`${Math.round(record.risk.toxicityRisk)}%`} danger={record.risk.toxicityRisk > 50} />
             <RiskStatCard icon={Eye} label="误判窗口" value={record.risk.misjudgmentWindow ? '高风险' : '正常'} warn={record.risk.misjudgmentWindow} />
-            <RiskStatCard icon={Share2} label="混生概率" value={`${Math.round(record.risk.cooccurrenceProb * 100)}%`} warn={record.risk.cooccurrenceProb > 0.4} />
+            <RiskStatCard icon={Share2} label="混生概率" value={`${Math.round(record.risk.cooccurrenceProb)}%`} warn={record.risk.cooccurrenceProb > 40} />
             <RiskStatCard icon={Flame} label="蒸煮解毒" value={record.risk.detoxPossible ? '可处理' : '无效'} danger={!record.risk.detoxPossible} />
           </div>
 

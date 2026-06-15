@@ -27,8 +27,12 @@ export default function BottomNav() {
               )
             }
           >
-            <Icon className="w-5 h-5" strokeWidth={isActive => isActive ? 2.5 : 2 as any} />
-            <span className="text-[11px] font-medium leading-none">{label}</span>
+            {({ isActive }) => (
+              <>
+                <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                <span className="text-[11px] font-medium leading-none">{label}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </div>

@@ -142,11 +142,14 @@ export function analyzeRisk(
   return {
     amanitaMatch: isAmanitaMatch,
     amanitaHits,
-    toxicityRisk: Math.round(toxicityRisk),
+    toxicityRisk: Math.max(0, Math.min(100, Math.round(toxicityRisk))),
     misjudgmentWindow,
     misjudgmentReason,
-    cooccurrenceProb: Math.round(cooccurrenceProb),
-    cooccurringSpecies: cooccurringSpecies.sort((a, b) => b.prob - a.prob).slice(0, 5),
+    cooccurrenceProb: Math.max(0, Math.min(100, Math.round(cooccurrenceProb))),
+    cooccurringSpecies: cooccurringSpecies
+      .map(c => ({ ...c, prob: Math.max(0, Math.min(100, Math.round(c.prob))) }))
+      .sort((a, b) => b.prob - a.prob)
+      .slice(0, 5),
     detoxPossible,
     detoxFailureReason,
     heatStableToxins,
